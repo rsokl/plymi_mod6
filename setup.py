@@ -1,7 +1,7 @@
 from setuptools import find_packages, setup
 
 setup(
-    name="plymi_mod_6",
+    name="plymi_mod6",
     packages=find_packages(exclude=["tests", "tests.*"]),
     version="1.0.0",
     author="A Fastidious PLYMI Reader",
