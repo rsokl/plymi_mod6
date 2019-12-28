@@ -31,13 +31,13 @@ def test_writing_a_file():
 # thus call these tests using the value returned by our
 # fixture
 
-def test_email1(dummy_email):
+def test_email1(dummy_email: str):
     assert "dummy" in dummy_email
 
 
-def test_email2(dummy_email):
+def test_email2(dummy_email: str):
     assert "plymi" in dummy_email
 
 
-def test_email3(dummy_email):
+def test_email3(dummy_email: str):
     assert ".com" in dummy_email
