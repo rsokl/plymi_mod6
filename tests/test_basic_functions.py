@@ -1,3 +1,6 @@
+# This file contains the tests for our basic functions, rewritten
+# using pytest's parameterization feature
+
 import pytest
 from plymi_mod6.basic_functions import count_vowels, merge_max_mappings
 
