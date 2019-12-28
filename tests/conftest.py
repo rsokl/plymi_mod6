@@ -26,5 +26,10 @@ def cleandir() -> str:
 
 
 @pytest.fixture()
-def dummy_email():
+def dummy_email() -> str:
+    """ This fixture will simply have pytest pass the string:
+                   'dummy.email@plymi.com'
+    to any test-function that has the parameter name `dummy_email` in
+    its signature.
+    """
     return "dummy.email@plymi.com"
