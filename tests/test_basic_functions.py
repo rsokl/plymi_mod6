@@ -1,5 +1,5 @@
 from random import shuffle
-from typing import Dict
+from typing import Dict, Union
 from string import printable
 
 import hypothesis.strategies as st
@@ -85,22 +85,45 @@ def test_merge_max_mappings_parameterized(
 ####################
 
 
+# a list of all printable non-vowel characters
 _not_vowels = "".join([l for l in printable if l.lower() not in set("aeiouy")])
 
 
 @given(
     not_vowels=st.text(alphabet=_not_vowels),
-    not_ys=st.text(alphabet="aeiouAEIOU"),
+    vowels_but_not_ys=st.text(alphabet="aeiouAEIOU"),
     ys=st.text(alphabet="yY"),
 )
-def test_count_vowels_hypothesis(not_vowels: str, not_ys: str, ys: str):
-    # shuffle ys into string
-    letters = list(not_vowels) + list(not_ys) + list(ys)
+def test_count_vowels_hypothesis(not_vowels: str, vowels_but_not_ys: str, ys: str):
+    """
+    Constructs an input string with a known number of:
+       - non-vowel characters
+       - non-y vowel characters
+       - y characters
+
+    and thus, by constructions, we can test that the output
+    of `count_vowels` agrees with the known number of vowels
+    """
+    # list of characters
+    letters = list(not_vowels) + list(vowels_but_not_ys) + list(ys)
+
+    # We need to shuffle the ordering of our characters so that
+    # our input string isn't unnaturally patterned; e.g. always
+    # have its vowels at the end
     shuffle(letters)
     in_string = "".join(letters)
-    note(f"in_string: {in_string}")
-    assert count_vowels(in_string, include_y=False) == len(not_ys)
-    assert count_vowels(in_string, include_y=True) == len(not_ys) + len(ys)
+
+    # Hypothesis provides a `note` function that will print out
+    # whatever input you give it, but only in the case that the
+    # test fails.
+    # This way we can see the exact string that we fed to `count_vowels`,
+    # if it caused our test to fail
+    note("in_string: " + in_string)
+
+    # testing that `count_vowels` produces the expected output
+    # both including and excluding y's in the count
+    assert count_vowels(in_string, include_y=False) == len(vowels_but_not_ys)
+    assert count_vowels(in_string, include_y=True) == len(vowels_but_not_ys) + len(ys)
 
 
 @given(
@@ -111,26 +134,32 @@ def test_count_vowels_hypothesis(not_vowels: str, not_ys: str, ys: str):
         keys=st.integers(-10, 10) | st.text(), values=st.integers(-10, 10)
     ),
 )
-def test_merge_max_mappings_hypothesis(dict1: Dict[int, int], dict2: Dict[int, int]):
+def test_merge_max_mappings_hypothesis(
+        dict1: Dict[Union[int, str], int], dict2: Dict[Union[int, str], int]
+):
     merged_dict = merge_max_mappings(dict1, dict2)
-    assert set(merged_dict) == set(dict1).union(
-        dict2
-    ), "novel keys were introduced or lost"
 
+    # property: `merged_dict` contains all of the keys among
+    # `dict1` and `dict2`
+    assert set(merged_dict) == set(dict1).union(dict2), \
+        "novel keys were introduced or lost"
+
+    # property: `merged_dict` only contains values that appear
+    # among `dict1` and `dict2`
     assert set(merged_dict.values()) <= set(dict1.values()).union(
         dict2.values()
     ), "novel values were introduced"
 
-    assert all(
-        dict1[k] <= merged_dict[k] for k in dict1
-    ), "`merged_dict` contains a non-max value"
+    # property: `merged_dict` only contains key-value pairs with
+    # the largest value represented among the pairs in `dict1`
+    # and `dict2`
+    assert all(dict1[k] <= merged_dict[k] for k in dict1) and \
+           all(dict2[k] <= merged_dict[k] for k in dict2), \
+        "`merged_dict` contains a non-max value"
 
-    assert all(
-        dict2[k] <= merged_dict[k] for k in dict2
-    ), "`merged_dict` contains a non-max value"
-
+    # property: `merged_dict` only contains key-value pairs that
+    # appear among `dict1` and `dict2`
     for k, v in merged_dict.items():
-        assert (k, v) in dict1.items() or (
-            k,
-            v,
-        ) in dict2.items(), "`merged_dict` did not preserve the key-value pairings"
+        assert (k, v) in dict1.items() or \
+               (k, v) in dict2.items(), \
+            "`merged_dict` did not preserve the key-value pairings"
